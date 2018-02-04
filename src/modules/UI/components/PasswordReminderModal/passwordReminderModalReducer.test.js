@@ -7,7 +7,7 @@ import {
   MAX_NON_PASSWORD_LOGINS_LIMIT,
   NON_PASSWORD_DAYS_GROWTH_RATE,
   NON_PASSWORD_LOGINS_GROWTH_RATE
- } from './passwordReminderModalReducer.js'
+} from './indexPasswordReminder.js'
 
 describe('PasswordReminder', () => {
   test('initialState', () => {
@@ -17,8 +17,8 @@ describe('PasswordReminder', () => {
     expect(actual).toEqual(expected)
   })
 
-  describe('non-password login', () => {
-    describe('decrement nonPasswordLoginsRemaining', () => {
+  describe('Non-password login', () => {
+    describe('Decrement nonPasswordLoginsRemaining', () => {
       test('EDGE LOGIN', () => {
         const expected = initialState.nonPasswordLoginsRemaining - 1
         const action = { type: 'EDGE_LOGIN' }
@@ -51,16 +51,26 @@ describe('PasswordReminder', () => {
         expect(actual).toEqual(expected)
       })
     })
+
+    describe('Decrement nonPasswordDaysRemaining', () => {
+      test('EDGE LOGIN', () => {
+        const currentDate = new Date(86400000)
+        const expected = initialState.nonPasswordDaysRemaining - 1
+        const action = { type: 'EDGE_LOGIN', currentDate }
+        const actual = uut(initialState, action).nonPasswordDaysRemaining
+
+        expect(actual).toEqual(expected)
+      })
+    })
   })
 
-  describe('password verified', () => {
-    describe(
-      `* Set false needsPasswordCheck,
-       * Reset nonPasswordDaysRemaining,
-       * Reset nonPasswordLoginsRemaining,
-       * Update nonPasswordLoginsLimit,
-       * Update nonPasswordDaysLimit,
-       * Update lastPasswordUse`, () => {
+  describe('Password used', () => {
+    describe(`* Set needsPasswordCheck -> false,
+      * Update nonPasswordLoginsLimit,
+      * Update nonPasswordDaysLimit,
+      * Set nonPasswordDaysRemaining -> nonPasswordLoginsLimit,
+      * Set nonPasswordLoginsRemaining -> nonPasswordDaysLimit,
+      * Update lastPasswordUse`, () => {
       test('NEW_ACCOUNT_LOGIN', () => {
         const testDate = new Date()
         const needsPasswordCheck = false
@@ -273,61 +283,65 @@ describe('PasswordReminder', () => {
     })
   })
 
-  test('Too many days since last password use', () => {
-    const nonPasswordDaysLimit = 32
-    const lastPasswordUse = new Date(0) // 1970-01-01T00:00:00.000Z
-    const currentDate = new Date(86400000 * nonPasswordDaysLimit + 1)
-    const previousState = {
-      ...initialState,
-      lastPasswordUse,
-      nonPasswordDaysLimit
-    }
-    const expected = true
-    const action = { type: 'PIN_LOGIN', currentDate }
-    const actual = uut(previousState, action).needsPasswordCheck
-
-    expect(actual).toEqual(expected)
-  })
-
-  test('Too many non-password logins', () => {
-    const nonPasswordLoginsRemaining = 1
-    const previousState = {
-      ...initialState,
-      nonPasswordLoginsRemaining
-    }
-    const expected = true
-    const action = { type: 'PIN_LOGIN' }
-    const actual = uut(previousState, action).needsPasswordCheck
-
-    expect(actual).toEqual(expected)
-  })
-
-  describe('PASSWORD_REMINDER_SKIPPED', () => {
-    test('Set nonPasswordDaysRemaining +2', () => {
-      const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
-
-      const expected = 4
-      const actual = uut(initialState, action).nonPasswordDaysRemaining
+  describe('Too many', () => {
+    test('Days since last password use', () => {
+      const nonPasswordDaysLimit = 32
+      const lastPasswordUse = new Date(0) // 1970-01-01T00:00:00.000Z
+      const currentDate = new Date(86400000 * nonPasswordDaysLimit + 1)
+      const previousState = {
+        ...initialState,
+        lastPasswordUse,
+        nonPasswordDaysLimit
+      }
+      const expected = true
+      const action = { type: 'PIN_LOGIN', currentDate }
+      const actual = uut(previousState, action).needsPasswordCheck
 
       expect(actual).toEqual(expected)
     })
 
-    test('Set nonPasswordLoginsRemaining +2', () => {
-      const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
-
-      const expected = 4
-      const actual = uut(initialState, action).nonPasswordLoginsRemaining
+    test('Non-password logins', () => {
+      const nonPasswordLoginsRemaining = 1
+      const previousState = {
+        ...initialState,
+        nonPasswordLoginsRemaining
+      }
+      const expected = true
+      const action = { type: 'PIN_LOGIN' }
+      const actual = uut(previousState, action).needsPasswordCheck
 
       expect(actual).toEqual(expected)
     })
+  })
 
-    test('Set false needsPasswordCheck', () => {
-      const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
+  describe('Password Reminder skipped', () => {
+    describe('PASSWORD_REMINDER_SKIPPED', () => {
+      test('Set nonPasswordDaysRemaining +2', () => {
+        const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
 
-      const expected = false
-      const actual = uut(initialState, action).needsPasswordCheck
+        const expected = 4
+        const actual = uut(initialState, action).nonPasswordDaysRemaining
 
-      expect(actual).toEqual(expected)
+        expect(actual).toEqual(expected)
+      })
+
+      test('Set nonPasswordLoginsRemaining +2', () => {
+        const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
+
+        const expected = 4
+        const actual = uut(initialState, action).nonPasswordLoginsRemaining
+
+        expect(actual).toEqual(expected)
+      })
+
+      test('Set false needsPasswordCheck', () => {
+        const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
+
+        const expected = false
+        const actual = uut(initialState, action).needsPasswordCheck
+
+        expect(actual).toEqual(expected)
+      })
     })
   })
 })

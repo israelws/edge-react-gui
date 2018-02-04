@@ -19,7 +19,7 @@ export const NON_PASSWORD_DAYS_POSTPONEMENT = 2
 export const NON_PASSWORD_LOGINS_POSTPONMENT = 2
 
 const MILLISECONDS_PER_DAY = 86400000
-const daysBetween = (a, b) => {
+const daysBetween = (a, b: any) => {
   const millisecondsBetween = b - a
   const daysBetween = millisecondsBetween / MILLISECONDS_PER_DAY
   return daysBetween
@@ -52,22 +52,13 @@ export const passwordReminderReducer = (state: PasswordReminderState = initialSt
     case 'PASSWORD_VERIFIED_UNLOCK_SPENDING_LIMITS':
     case 'PASSWORD_VERIFIED_2FA':
     case 'PASSWORD_VERIFIED_RECOVERY_QUESTIONS': {
-      const nonPasswordDaysLimit = Math.min(
-        state.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE,
-        MAX_NON_PASSWORD_DAYS_LIMIT
-      )
-      const nonPasswordLoginsLimit = Math.min(
-        state.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE,
-        MAX_NON_PASSWORD_LOGINS_LIMIT
-      )
-
       return {
         needsPasswordCheck: false,
         lastPasswordUse: action.lastPasswordUse || new Date(), // action.lastPasswordUse is used to produce deterministic tests
-        nonPasswordDaysRemaining: nonPasswordDaysLimit,
-        nonPasswordLoginsRemaining: nonPasswordLoginsLimit,
-        nonPasswordDaysLimit,
-        nonPasswordLoginsLimit
+        nonPasswordDaysRemaining: state.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE,
+        nonPasswordLoginsRemaining: state.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE,
+        nonPasswordDaysLimit: Math.min(state.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE, MAX_NON_PASSWORD_DAYS_LIMIT),
+        nonPasswordLoginsLimit: Math.min(state.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE, MAX_NON_PASSWORD_LOGINS_LIMIT)
       }
     }
 
@@ -75,16 +66,13 @@ export const passwordReminderReducer = (state: PasswordReminderState = initialSt
     case 'KEY_LOGIN':
     case 'PIN_LOGIN':
     case 'RECOVERY_LOGIN': {
-      // If too many nonPasswordDaysRemaining between password logins
-      const nonPasswordDaysRemaining = state.nonPasswordDaysLimit - daysBetween(state.lastPasswordUse, action.currentDate || new Date()) // action.currentDate is used to make deterministic tests
-      const nonPasswordLoginsRemaining = state.nonPasswordLoginsRemaining - 1
       // save to local settings? do this in <PasswordReminderModal />
 
       return {
         ...state,
-        nonPasswordLoginsRemaining,
-        nonPasswordDaysRemaining,
-        needsPasswordCheck: nonPasswordDaysRemaining <= 0 || nonPasswordLoginsRemaining <= 0
+        nonPasswordLoginsRemaining: state.nonPasswordLoginsRemaining - 1,
+        nonPasswordDaysRemaining: state.nonPasswordDaysLimit - daysBetween(state.lastPasswordUse, action.currentDate || new Date()), // action.currentDate is used to make deterministic tests,
+        needsPasswordCheck: (state.nonPasswordLoginsRemaining - 1) <= 0 || (state.nonPasswordDaysLimit - daysBetween(state.lastPasswordUse, action.currentDate || new Date())) <= 0
       }
     }
 
