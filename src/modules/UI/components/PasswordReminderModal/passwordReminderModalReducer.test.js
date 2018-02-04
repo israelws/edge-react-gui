@@ -3,10 +3,10 @@
 import {
   passwordReminderReducer as uut,
   initialState,
-  MAX_DAYS_LIMIT,
+  MAX_NON_PASSWORD_DAYS_LIMIT,
   MAX_NON_PASSWORD_LOGINS_LIMIT,
-  INCREMENT_DAYS_LIMIT,
-  INCREMENT_NON_PASSWORD_LOGINS_LIMIT
+  NON_PASSWORD_DAYS_GROWTH_RATE,
+  NON_PASSWORD_LOGINS_GROWTH_RATE
  } from './passwordReminderModalReducer.js'
 
 describe('PasswordReminder', () => {
@@ -18,35 +18,35 @@ describe('PasswordReminder', () => {
   })
 
   describe('non-password login', () => {
-    describe('Increment nonPasswordLogins', () => {
+    describe('decrement nonPasswordLoginsRemaining', () => {
       test('EDGE LOGIN', () => {
-        const expected = initialState.nonPasswordLogins + 1
+        const expected = initialState.nonPasswordLoginsRemaining - 1
         const action = { type: 'EDGE_LOGIN' }
-        const actual = uut(initialState, action).nonPasswordLogins
+        const actual = uut(initialState, action).nonPasswordLoginsRemaining
 
         expect(actual).toEqual(expected)
       })
 
       test('KEY_LOGIN', () => {
-        const expected = initialState.nonPasswordLogins + 1
+        const expected = initialState.nonPasswordLoginsRemaining - 1
         const action = { type: 'KEY_LOGIN' }
-        const actual = uut(initialState, action).nonPasswordLogins
+        const actual = uut(initialState, action).nonPasswordLoginsRemaining
 
         expect(actual).toEqual(expected)
       })
 
       test('PIN_LOGIN', () => {
-        const expected = initialState.nonPasswordLogins + 1
+        const expected = initialState.nonPasswordLoginsRemaining - 1
         const action = { type: 'PIN_LOGIN' }
-        const actual = uut(initialState, action).nonPasswordLogins
+        const actual = uut(initialState, action).nonPasswordLoginsRemaining
 
         expect(actual).toEqual(expected)
       })
 
       test('RECOVERY_LOGIN', () => {
-        const expected = initialState.nonPasswordLogins + 1
+        const expected = initialState.nonPasswordLoginsRemaining - 1
         const action = { type: 'RECOVERY_LOGIN' }
-        const actual = uut(initialState, action).nonPasswordLogins
+        const actual = uut(initialState, action).nonPasswordLoginsRemaining
 
         expect(actual).toEqual(expected)
       })
@@ -54,16 +54,32 @@ describe('PasswordReminder', () => {
   })
 
   describe('password verified', () => {
-    describe('Set false needsPasswordCheck, Increment passwordUses, update lastPasswordUse, increment daysLimit, increment nonPasswordLoginsLimit', () => {
+    describe(
+      `* Set false needsPasswordCheck,
+       * Reset nonPasswordDaysRemaining,
+       * Reset nonPasswordLoginsRemaining,
+       * Update nonPasswordLoginsLimit,
+       * Update nonPasswordDaysLimit,
+       * Update lastPasswordUse`, () => {
       test('NEW_ACCOUNT_LOGIN', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'NEW_ACCOUNT_LOGIN', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -73,13 +89,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_LOGIN', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_LOGIN', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -89,13 +115,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_VERIFIED_UNLOCK_SETTINGS', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_VERIFIED_UNLOCK_SETTINGS', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -105,13 +141,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_VERIFIED_PASSWORD_REMINDER', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_VERIFIED_PASSWORD_REMINDER', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -121,13 +167,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_VERIFIED_UNLOCK_SPENDING_LIMITS', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_VERIFIED_UNLOCK_SPENDING_LIMITS', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -137,13 +193,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_VERIFIED_2FA', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_VERIFIED_2FA', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -153,13 +219,23 @@ describe('PasswordReminder', () => {
 
       test('PASSWORD_VERIFIED_RECOVERY_QUESTIONS', () => {
         const testDate = new Date()
+        const needsPasswordCheck = false
+        const lastPasswordUse = testDate
+
+        const nonPasswordDaysLimit = initialState.nonPasswordDaysLimit * NON_PASSWORD_DAYS_GROWTH_RATE
+        const nonPasswordLoginsLimit = initialState.nonPasswordLoginsLimit * NON_PASSWORD_LOGINS_GROWTH_RATE
+
+        const nonPasswordDaysRemaining = nonPasswordDaysLimit
+        const nonPasswordLoginsRemaining = nonPasswordLoginsLimit
+
         const expected = {
           ...initialState,
-          needsPasswordCheck: false,
-          passwordUses: initialState.passwordUses + 1,
-          lastPasswordUse: testDate,
-          daysLimit: 2,
-          nonPasswordLoginsLimit: 2
+          needsPasswordCheck,
+          nonPasswordDaysRemaining,
+          nonPasswordLoginsRemaining,
+          lastPasswordUse,
+          nonPasswordDaysLimit,
+          nonPasswordLoginsLimit
         }
         const action = { type: 'PASSWORD_VERIFIED_RECOVERY_QUESTIONS', lastPasswordUse: testDate } // used to produce deterministic tests
         const actual = uut(initialState, action)
@@ -172,7 +248,7 @@ describe('PasswordReminder', () => {
       test('PASSWORD_LOGIN', () => {
         const previousState = {
           ...initialState,
-          passwordUses: 1000
+          nonPasswordLoginsLimit: MAX_NON_PASSWORD_LOGINS_LIMIT
         }
         const expected = MAX_NON_PASSWORD_LOGINS_LIMIT
         const action = { type: 'PASSWORD_LOGIN' }
@@ -182,15 +258,15 @@ describe('PasswordReminder', () => {
       })
     })
 
-    describe('Respect MAX_DAYS_LIMIT', () => {
+    describe('Respect MAX_NON_PASSWORD_DAYS_LIMIT', () => {
       test('PASSWORD_LOGIN', () => {
         const previousState = {
           ...initialState,
-          passwordUses: 1000
+          nonPasswordDaysLimit: MAX_NON_PASSWORD_DAYS_LIMIT
         }
-        const expected = MAX_DAYS_LIMIT
+        const expected = MAX_NON_PASSWORD_DAYS_LIMIT
         const action = { type: 'PASSWORD_LOGIN' }
-        const actual = uut(previousState, action).daysLimit
+        const actual = uut(previousState, action).nonPasswordDaysLimit
 
         expect(actual).toEqual(expected)
       })
@@ -198,13 +274,13 @@ describe('PasswordReminder', () => {
   })
 
   test('Too many days since last password use', () => {
-    const daysLimit = 32
+    const nonPasswordDaysLimit = 32
     const lastPasswordUse = new Date(0) // 1970-01-01T00:00:00.000Z
-    const currentDate = new Date(86400000 * daysLimit + 1)
+    const currentDate = new Date(86400000 * nonPasswordDaysLimit + 1)
     const previousState = {
       ...initialState,
-      daysLimit,
-      lastPasswordUse
+      lastPasswordUse,
+      nonPasswordDaysLimit
     }
     const expected = true
     const action = { type: 'PIN_LOGIN', currentDate }
@@ -214,39 +290,42 @@ describe('PasswordReminder', () => {
   })
 
   test('Too many non-password logins', () => {
-    const nonPasswordLoginLimit = 32
-    const lastPasswordUse = new Date(0) // 1970-01-01T00:00:00.000Z
-    const currentDate = new Date(86400000 * nonPasswordLoginLimit + 1)
+    const nonPasswordLoginsRemaining = 1
     const previousState = {
       ...initialState,
-      nonPasswordLoginLimit,
-      lastPasswordUse
+      nonPasswordLoginsRemaining
     }
     const expected = true
-    const action = { type: 'PIN_LOGIN', currentDate }
+    const action = { type: 'PIN_LOGIN' }
     const actual = uut(previousState, action).needsPasswordCheck
 
     expect(actual).toEqual(expected)
   })
 
   describe('PASSWORD_REMINDER_SKIPPED', () => {
-    test('Set false needsPasswordCheck, Set daysLimit +2, Set nonPasswordLogins 2')
-      const previousState = uut(initialState, {type: 'NEW_ACCOUNT'})
-      const expected = 2
+    test('Set nonPasswordDaysRemaining +2', () => {
       const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
-      const actual = uut(perviousState, action).daysLimit
+
+      const expected = 4
+      const actual = uut(initialState, action).nonPasswordDaysRemaining
 
       expect(actual).toEqual(expected)
     })
 
-    test('Increments nonPasswordLoginsLimit', () => {
-      const previousState = {
-        ...initialState,
-
-      }
-      const expected = 2
+    test('Set nonPasswordLoginsRemaining +2', () => {
       const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
-      const actual = uut(initialState, action).nonPasswordLoginsLimit
+
+      const expected = 4
+      const actual = uut(initialState, action).nonPasswordLoginsRemaining
+
+      expect(actual).toEqual(expected)
+    })
+
+    test('Set false needsPasswordCheck', () => {
+      const action = { type: 'PASSWORD_REMINDER_SKIPPED' }
+
+      const expected = false
+      const actual = uut(initialState, action).needsPasswordCheck
 
       expect(actual).toEqual(expected)
     })
