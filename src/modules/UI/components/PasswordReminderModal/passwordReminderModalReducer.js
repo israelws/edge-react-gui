@@ -2,15 +2,18 @@
 
 import type { Action } from '../../../ReduxTypes'
 
-const DEFAULT_PASSWORD_REMINDER_DAYS = 2
-const DEFAULT_PASSWORD_REMINDER_COUNT = 2
-const PASSWORD_DAYS_INCREMENT_MULTIPLIER = 2
-const PASSWORD_COUNT_INCREMENT_MULTIPLIER = 2
-const PASSWORD_DAYS_MAX_VALUE = 64 // max number of consecutive days of non password logins
-const PASSWORD_COUNT_MAX_VALUE = 128 // max number of consecutive non password logins
-const PASSWORD_WRONG_INCREMENT_DAYS = 2
-const PASSWORD_WRONG_INCREMENT_COUNT = 2
-const PASSWORD_RECOVERY_MULTIPLIER = 2
+export const INITIAL_DAYS_LIMIT = 2
+export const INITIAL_NON_PASSWORD_LOGINS_LIMIT = 2
+
+export const DAYS_MULTIPLIER = 2
+export const COUNT_MULTIPLIER = 2
+export const PASSWORD_RECOVERY_MULTIPLIER = 2
+
+export const MAX_DAYS_LIMIT = 64 // max number of consecutive daysLimit of non password logins
+export const MAX_NON_PASSWORD_LOGINS_LIMIT = 128 // max number of consecutive non password logins
+
+export const INCREMENT_DAYS_LIMIT = 2
+export const INCREMENT_NON_PASSWORD_LOGINS_LIMIT = 2
 
 const MILLISECONDS_PER_DAY = 86400000
 const daysBetween = (a, b) => {
@@ -18,30 +21,30 @@ const daysBetween = (a, b) => {
   const daysBetween = millisecondsBetween / MILLISECONDS_PER_DAY
   return daysBetween
 }
-const getFutureDate = (days, date = new Date()) => {
-  const futureDate = days * MILLISECONDS_PER_DAY + date.getTime()
+const getFutureDate = (daysLimit, date = new Date()) => {
+  const futureDate = daysLimit * MILLISECONDS_PER_DAY + date.getTime()
   return new Date(futureDate)
 }
 
 export const initialState = {
   needsPasswordCheck: true,
-  lastPasswordLogin: new Date(0),
-  passwordReminderDays: DEFAULT_PASSWORD_REMINDER_DAYS,
-  passwordReminderCount: DEFAULT_PASSWORD_REMINDER_COUNT,
-  numPasswordUsed: 0,
-  numNonPasswordLogin: 0
+  lastPasswordUse: new Date(0),
+  daysLimit: INITIAL_DAYS_LIMIT,
+  nonPasswordLoginsLimit: INITIAL_NON_PASSWORD_LOGINS_LIMIT,
+  passwordUses: 0,
+  nonPasswordLogins: 0
 }
 
 export type PasswordReminderState = {
   needsPasswordCheck: boolean,
-  lastPasswordLogin: Date,
-  passwordReminderDays: number,
-  passwordReminderCount: number,
-  numPasswordUsed: number,
-  numNonPasswordLogin: number
+  lastPasswordUse: Date,
+  daysLimit: number,
+  nonPasswordLoginsLimit: number,
+  passwordUses: number,
+  nonPasswordLogins: number
 }
 
-export const passwordReminderReducer = (state: PasswordReminderState = initialState, action: Action = {}) => {
+export const passwordReminderReducer = (state: PasswordReminderState = initialState, action: Action) => {
   switch (action.type) {
     case 'NEW_ACCOUNT_LOGIN':
     case 'PASSWORD_LOGIN':
@@ -50,23 +53,24 @@ export const passwordReminderReducer = (state: PasswordReminderState = initialSt
     case 'PASSWORD_VERIFIED_UNLOCK_SPENDING_LIMITS':
     case 'PASSWORD_VERIFIED_2FA':
     case 'PASSWORD_VERIFIED_RECOVERY_QUESTIONS': {
-      const numPasswordUsed = state.numPasswordUsed + 1
-      let passwordReminderDays = Math.pow(PASSWORD_DAYS_INCREMENT_MULTIPLIER, numPasswordUsed)
-      let passwordReminderCount = Math.pow(PASSWORD_COUNT_INCREMENT_MULTIPLIER, numPasswordUsed)
-      if (passwordReminderDays > PASSWORD_DAYS_MAX_VALUE) {
-        passwordReminderDays = PASSWORD_DAYS_MAX_VALUE
+      debugger
+      const passwordUses = state.passwordUses + 1
+      let daysLimit = Math.pow(DAYS_MULTIPLIER, passwordUses)
+      let nonPasswordLoginsLimit = Math.pow(COUNT_MULTIPLIER, passwordUses)
+      if (daysLimit > MAX_DAYS_LIMIT) {
+        daysLimit = MAX_DAYS_LIMIT
       }
 
-      if (passwordReminderCount > PASSWORD_COUNT_MAX_VALUE) {
-        passwordReminderCount = PASSWORD_COUNT_MAX_VALUE
+      if (nonPasswordLoginsLimit > MAX_NON_PASSWORD_LOGINS_LIMIT) {
+        nonPasswordLoginsLimit = MAX_NON_PASSWORD_LOGINS_LIMIT
       }
       return {
         needsPasswordCheck: false,
-        numNonPasswordLogin: 0,
-        numPasswordUsed,
-        lastPasswordLogin: new Date(),
-        passwordReminderDays,
-        passwordReminderCount
+        nonPasswordLogins: 0,
+        passwordUses,
+        lastPasswordUse: action.lastPasswordUse || new Date(), // action.lastPasswordUse is used to produce deterministic tests
+        daysLimit,
+        nonPasswordLoginsLimit
       }
     }
 
@@ -74,36 +78,35 @@ export const passwordReminderReducer = (state: PasswordReminderState = initialSt
     case 'KEY_LOGIN':
     case 'PIN_LOGIN':
     case 'RECOVERY_LOGIN': {
-      const numNonPasswordLogin = state.numNonPasswordLogin + 1
+      const nonPasswordLogins = state.nonPasswordLogins + 1
       // save to local settings? do this in <PasswordReminderModal />
 
       let needsPasswordCheck = state.needsPasswordCheck
 
       // If too many non-password logins
-      if (numNonPasswordLogin >= state.passwordReminderCount) {
+      if (nonPasswordLogins >= state.nonPasswordLoginsLimit) {
         needsPasswordCheck = true
       }
 
-      // If too many days between password logins
-      const days = daysBetween(state.lastPasswordLogin, new Date())
-      if (days >= state.passwordReminderDays) {
+      // If too many daysLimit between password logins
+      const daysLimit = daysBetween(state.lastPasswordUse, action.currentDate || new Date()) // action.currentDate is used to make deterministic tests
+      if (daysLimit >= state.daysLimit) {
         needsPasswordCheck = true
       }
 
       return {
         ...state,
+        nonPasswordLogins,
         needsPasswordCheck
       }
     }
 
     case 'PASSWORD_REMINDER_SKIPPED': {
-      const passwordReminderDays = daysBetween(state.lastPasswordLogin, getFutureDate(2))
-      const passwordReminderCount = state.numNonPasswordLogin + PASSWORD_WRONG_INCREMENT_COUNT
-
       return {
         ...state,
-        passwordReminderDays,
-        passwordReminderCount
+        needsPasswordCheck: false,
+        daysLimit: state.daysLimit + 2,
+        nonPasswordLoginsLimit: state.nonPasswordLoginsLimit + 2
       }
     }
 
